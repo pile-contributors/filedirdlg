@@ -78,6 +78,13 @@
 #  endif
 #endif
 
+#ifndef DBG_ASSERT
+#  ifdef FILEDIRDLG_DEBUG
+#    define DBG_ASSERT(X)
+#  else
+#    define DBG_ASSERT(X)
+#  endif
+#endif // DBG_ASSERT
 
 /**
  * @def FILEDIRDLG_STATIC
