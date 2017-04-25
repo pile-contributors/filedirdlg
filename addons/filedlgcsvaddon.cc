@@ -264,6 +264,26 @@ void FileDlgCsvAddon::clearPreview ()
 /* ========================================================================= */
 
 /* ------------------------------------------------------------------------- */
+bool FileDlgCsvAddon::getCsvParms (
+        QString &s_codec, QString &separator, QString &quote)
+{
+    s_codec = encoding_drop->currentData().toString ();
+
+    separator = separator_edit->text ();
+    if (separator.isEmpty()) {
+        separator = ",";
+    }
+
+    quote = quote_edit->text ();
+    if (quote.isEmpty()) {
+        quote = "\"";
+    }
+
+    return true;
+}
+/* ========================================================================= */
+
+/* ------------------------------------------------------------------------- */
 QTableWidgetItem * FileDlgCsvAddon::showOneItem (const QString & s_str)
 {
     QTableWidgetItem * itm = new QTableWidgetItem (s_str);
@@ -349,17 +369,10 @@ void FileDlgCsvAddon::updateCSVPreview ()
     clearPreview ();
 
     for (;;) {
-        QString s_codec = encoding_drop->currentData().toString ();
-
-        QString s_sep = separator_edit->text ();
-        if (s_sep.isEmpty()) {
-            s_sep = ",";
-        }
-
-        QString s_quote = quote_edit->text ();
-        if (s_quote.isEmpty()) {
-            s_quote = "\"";
-        }
+        QString s_codec;
+        QString s_sep;
+        QString s_quote;
+        getCsvParms (s_codec, s_sep, s_quote);
 
         QString s__file = parent_dlg_->currentFile ();
         if (s__file.isEmpty()) {

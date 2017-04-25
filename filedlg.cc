@@ -291,8 +291,27 @@ bool FileDlg::prepareForCsv ()
 
         FileDlgCsvAddon * add_on = new FileDlgCsvAddon (this);
         add_on->setupUI (main_layout);
+        addon_ = add_on;
 
         b_ret = true;
+        break;
+    }
+    return b_ret;
+}
+/* ========================================================================= */
+
+/* ------------------------------------------------------------------------- */
+bool FileDlg::getCsvParms (
+        QString & s_codec, QString & separator, QString & quote)
+{
+    bool b_ret = false;
+    for (;;) {
+        FileDlgCsvAddon * add_on = qobject_cast<FileDlgCsvAddon*>(addon_);\
+        if (add_on == NULL) {
+            break;
+        }
+
+        b_ret = add_on->getCsvParms (s_codec, separator, quote);
         break;
     }
     return b_ret;

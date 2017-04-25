@@ -171,12 +171,21 @@ public:
     bool
     insertFileEncodingAndPreview ();
 
+    //! The path for current selection in the main treeview.
+    QString
+    currentFile();
+
+
     //! Useful for CSV.
     bool
     prepareForCsv ();
 
-    QString
-    currentFile();
+    //! Extra parameters that the user may change in the dialog.
+    bool
+    getCsvParms (
+            QString &s_codec,
+            QString &separator,
+            QString &quote);
 
     /*  FUNCTIONS    ======================================================= */
     //

@@ -108,6 +108,12 @@ public:
     void
     clearPreview();
 
+    bool
+    getCsvParms (
+            QString & s_codec,
+            QString & separator,
+            QString & quote);
+
 public slots:
 
     //! Reloads the preview based on current selection and options.
