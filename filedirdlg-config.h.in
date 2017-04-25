@@ -135,4 +135,12 @@
 #   endif
 #endif
 
+
+/**
+ * @def HAVE_QT_CSV_LIB
+ * @brief If defined it indicates that the qtcsv library was found.
+ */
+#cmakedefine HAVE_QT_CSV_LIB
+
+
 #endif // GUARD_FILEDIRDLG_CONFIG_H_INCLUDE

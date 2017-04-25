@@ -1,6 +1,6 @@
 
 # enable/disable cmake debug messages related to this pile
-set (FILEDIRDLG_DEBUG_MSG ON)
+set (FILEDIRDLG_DEBUG_MSG OFF)
 
 # make sure support code is present; no harm
 # in including it twice; the user, however, should have used
@@ -10,6 +10,11 @@ include(pile_support)
 # initialize this module
 macro    (filedirdlgInit
           ref_cnt_use_mode)
+
+    # When set to ON the c++ file needs to be able to find the header
+    # with #include <qtcsv/reader.h> and sources need to be included
+    # so that the linker finds them.
+    option(HAVE_QT_CSV_LIB "Set to ON if qtcsv library is available" OFF)
 
     # default name
     if (NOT FILEDIRDLG_INIT_NAME)
