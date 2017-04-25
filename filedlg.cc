@@ -22,6 +22,7 @@
 /*  INCLUDES    ------------------------------------------------------------ */
 
 #include "filedlg.h"
+#include "addons/filedlgcsvaddon.h"
 
 #include <QFileInfo>
 #include <QDialogButtonBox>
@@ -39,6 +40,7 @@
 #include <QTreeView>
 #include <QToolButton>
 #include <QDebug>
+#include <QFileSystemModel>
 
 /*  INCLUDES    ============================================================ */
 //
@@ -63,7 +65,8 @@
 
 /* ------------------------------------------------------------------------- */
 FileDlg::FileDlg (QWidget *parent) :
-    QFileDialog(parent)
+    QFileDialog (parent),
+    addon_ (NULL)
 {
     setOption (QFileDialog::DontUseNativeDialog, true);
 
@@ -96,6 +99,30 @@ FileDlg::FileDlg (QWidget *parent) :
 QTreeView * FileDlg::mainTree () const
 {
     return findChildren<QTreeView*> ("treeView").at (0);
+}
+/* ========================================================================= */
+
+/* ------------------------------------------------------------------------- */
+bool FileDlg::getAllComponents (FileDlg::AllComponents &out)
+{
+    out.file_type_combo_ = fileTypeCombo ();
+    out.look_in_combo_ = lookInCombo ();
+    out.button_box_ = buttonBox ();
+    out.file_name_label_ = fileNameLabel ();
+    out.file_type_label_ = fileTypeLabel ();
+    out.look_in_label_ = lookInLabel ();
+    out.file_name_edit_ = fileNameEdit ();
+    out.left_list_ = leftList ();
+    out.main_splitter_ = mainSplitter ();
+    out.back_button_ = backButton ();
+    out.detail_model_button_ = detailModeButton ();
+    out.forward_button_ = forwardButton ();
+    out.list_mode_button_ = listModeButton ();
+    out.new_folder_button_ = newFolderButton ();
+    out.to_parent_button_ = toParentButton ();
+    out.main_tree_ = mainTree ();
+
+    return true;
 }
 /* ========================================================================= */
 
@@ -249,94 +276,6 @@ bool FileDlg::insertFileEncodingAndPreview()
 /* ========================================================================= */
 
 /* ------------------------------------------------------------------------- */
-class FileDlgAddon : public QObject {
-public:
-
-    FileDlgAddon (QObject * parent) :
-        QObject (parent)
-    {}
-
-    virtual ~FileDlgAddon ()
-    {}
-
-    virtual void
-    setupUI (
-            QGridLayout * main_layout) = 0;
-
-};
-/* ========================================================================= */
-
-/* ------------------------------------------------------------------------- */
-class FileDlgCsvAddon : public FileDlgAddon {
-public:
-    QHBoxLayout * vbox;
-    QLabel * encoding_label;
-    QComboBox * encoding_drop;
-    QLabel * separator_label;
-    QLineEdit * separator_edit;
-    QLabel * quote_label;
-    QLineEdit * quote_edit;
-    QLabel * preview_label;
-    QTableWidget * tbl;
-
-    FileDlgCsvAddon (QObject * parent) :
-        FileDlgAddon (parent),
-        vbox (NULL),
-        encoding_label (NULL),
-        encoding_drop (NULL),
-        separator_label (NULL),
-        separator_edit (NULL),
-        quote_label (NULL),
-        quote_edit (NULL),
-        preview_label (NULL),
-        tbl (NULL)
-    {}
-
-    virtual void
-    setupUI (
-            QGridLayout * main_layout)
-    {
-        int row_index = main_layout->rowCount ();
-        int column_index = main_layout->columnCount ();
-        QWidget * pwdg = main_layout->parentWidget ();
-
-        vbox = new QHBoxLayout (pwdg);
-        {
-            encoding_label = new QLabel (tr("Encoding"), pwdg);
-            vbox->addWidget (encoding_label);
-
-            encoding_drop = new QComboBox (pwdg);
-            QList<QByteArray> codec_list = QTextCodec::availableCodecs ();
-            qSort (codec_list);
-            foreach(const QByteArray & iter, codec_list) {
-                encoding_drop->addItem (QString::fromLatin1 (iter));
-            }
-            vbox->addWidget (encoding_drop);
-
-            separator_label = new QLabel (tr("Delimiter"), pwdg);
-            vbox->addWidget (separator_label);
-            separator_edit = new QLineEdit (tr(","), pwdg);
-            vbox->addWidget (separator_edit);
-
-            quote_label = new QLabel (tr("Quote"), pwdg);
-            vbox->addWidget (quote_label);
-            quote_edit = new QLineEdit (tr("\""), pwdg);
-            vbox->addWidget (quote_edit);
-        }
-        main_layout->addLayout (vbox, row_index, 0, 1, 3);
-
-        preview_label = new QLabel (tr("Preview"), pwdg);
-        preview_label->setAlignment (Qt::AlignHCenter);
-        main_layout->addWidget (preview_label, 0, column_index, Qt::AlignHCenter);
-
-        tbl = new QTableWidget (pwdg);
-        main_layout->addWidget (tbl, 1, column_index, row_index, 1);
-    }
-
-};
-/* ========================================================================= */
-
-/* ------------------------------------------------------------------------- */
 bool FileDlg::prepareForCsv ()
 {
     bool b_ret = false;
@@ -353,7 +292,6 @@ bool FileDlg::prepareForCsv ()
         FileDlgCsvAddon * add_on = new FileDlgCsvAddon (this);
         add_on->setupUI (main_layout);
 
-
         b_ret = true;
         break;
     }
@@ -362,9 +300,33 @@ bool FileDlg::prepareForCsv ()
 /* ========================================================================= */
 
 /* ------------------------------------------------------------------------- */
-void FileDlg::updateCSVPreview ()
+QString FileDlg::currentFile ()
 {
+    QString s_result;
 
+    for (;;) {
+        QTreeView * maintv = mainTree ();
+        QItemSelectionModel * selm = maintv->selectionModel ();
+        if (selm == NULL) {
+            DBG_ASSERT(false);
+            break;
+        }
+
+        QModelIndex mi = selm->currentIndex ();
+        if (!mi.isValid()) {
+            break;
+        }
+
+        QFileSystemModel* fsm =
+                qobject_cast<QFileSystemModel*>(maintv->model ());
+        if (fsm == NULL) {
+            break;
+        }
+
+        s_result = fsm->filePath (mi);
+        break;
+    }
+    return s_result;
 }
 /* ========================================================================= */
 

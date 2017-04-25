@@ -1,11 +1,11 @@
 /* ========================================================================= */
 /* ------------------------------------------------------------------------- */
 /*!
-\file         filedlg.h
+\file         filedlgaddon.h
 \date         December 2015
 \author       Nicu Tofan
 
-\brief        Contains the definition for FileDlg class.
+\brief        Contains the definition for FileDlgAddon class.
 
 *//*
 
@@ -15,8 +15,8 @@
 */
 /* ------------------------------------------------------------------------- */
 /* ========================================================================= */
-#ifndef GUARD_FILEDLG_H_INCLUDE
-#define GUARD_FILEDLG_H_INCLUDE
+#ifndef GUARD_FILEDLG_ADDON_H_INCLUDE
+#define GUARD_FILEDLG_ADDON_H_INCLUDE
 //
 //
 //
@@ -24,8 +24,7 @@
 /*  INCLUDES    ------------------------------------------------------------ */
 
 #include <filedirdlg/filedirdlg-config.h>
-
-#include <QFileDialog>
+#include <QObject>
 
 /*  INCLUDES    ============================================================ */
 //
@@ -35,6 +34,7 @@
 /*  DEFINITIONS    --------------------------------------------------------- */
 
 QT_BEGIN_NAMESPACE
+class QGridLayout;
 class QComboBox;
 class QDialogButtonBox;
 class QLabel;
@@ -45,10 +45,9 @@ class QToolButton;
 class QTreeView;
 class QHBoxLayout;
 class QTableWidget;
-class QDialogButtonBox;
 QT_END_NAMESPACE
 
-class FileDlgAddon;
+class FileDlg;
 
 /*  DEFINITIONS    ========================================================= */
 //
@@ -58,8 +57,8 @@ class FileDlgAddon;
 /*  CLASS    --------------------------------------------------------------- */
 
 
-//! Dialog for adding or editing pictures of the parcel.
-class FileDlg : public QFileDialog {
+//! Base class for add-ons.
+class FileDlgAddon : public QObject {
     Q_OBJECT
 
     //
@@ -70,26 +69,6 @@ class FileDlg : public QFileDialog {
 
 public:
 
-    //! All the components of the dialog.
-    struct AllComponents {
-        QComboBox * file_type_combo_;
-        QComboBox * look_in_combo_;
-        QDialogButtonBox * button_box_;
-        QLabel * file_name_label_;
-        QLabel * file_type_label_;
-        QLabel * look_in_label_;
-        QLineEdit * file_name_edit_;
-        QListView * left_list_;
-        QSplitter * main_splitter_;
-        QToolButton * back_button_;
-        QToolButton * detail_model_button_;
-        QToolButton * forward_button_;
-        QToolButton * list_mode_button_;
-        QToolButton * new_folder_button_;
-        QToolButton * to_parent_button_;
-        QTreeView * main_tree_;
-    };
-
     /*  DEFINITIONS    ===================================================== */
     //
     //
@@ -99,7 +78,7 @@ public:
 
 public:
 
-    FileDlgAddon * addon_;
+    FileDlg * parent_dlg_;
 
     /*  DATA    ============================================================ */
     //
@@ -111,72 +90,23 @@ public:
 public:
 
     //! Constructor.
-    explicit FileDlg (
-            QWidget *parent = NULL);
+    FileDlgAddon (
+            FileDlg * parent);
 
-    QComboBox *
-    fileTypeCombo () const;
+    virtual ~FileDlgAddon ()
+    {}
 
-    QComboBox *
-    lookInCombo () const;
+    virtual void
+    setupUI (
+            QGridLayout * main_layout) = 0;
 
-    QDialogButtonBox *
-    buttonBox () const;
+public:
 
-    QLabel *
-    fileNameLabel () const;
-
-    QLabel *
-    fileTypeLabel () const;
-
-    QLabel *
-    lookInLabel () const;
-
-    QLineEdit *
-    fileNameEdit () const;
-
-    QListView *
-    leftList () const;
-
-    QSplitter *
-    mainSplitter () const;
-
-    QToolButton *
-    backButton () const;
-
-    QToolButton *
-    detailModeButton () const;
-
-    QToolButton *
-    forwardButton () const;
-
-    QToolButton *
-    listModeButton () const;
-
-    QToolButton *
-    newFolderButton () const;
-
-    QToolButton *
-    toParentButton () const;
-
-    QTreeView *
-    mainTree () const;
-
-    bool
-    getAllComponents (
-            AllComponents & out);
-
-
-    //! Useful for text files.
-    bool
-    insertFileEncodingAndPreview ();
-
-    //! Useful for CSV.
-    bool
-    prepareForCsv ();
-
-    QString
-    currentFile();
+    static QStringList
+    readSomeTextlines (
+            const QString & s_file,
+            int lines_count=25,
+            const QString & encoding="UTF-8");
 
     /*  FUNCTIONS    ======================================================= */
     //
@@ -184,7 +114,7 @@ public:
     //
     //
 
-}; /* class FileDlg */
+}; /* class FileDlgAddon */
 
 /*  CLASS    =============================================================== */
 //
@@ -193,7 +123,7 @@ public:
 //
 
 
-#endif // GUARD_FILEDLG_H_INCLUDE
+#endif // GUARD_FILEDLG_ADDON_H_INCLUDE
 /* ------------------------------------------------------------------------- */
 /* ========================================================================= */
 

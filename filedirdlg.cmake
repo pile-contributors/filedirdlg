@@ -19,10 +19,14 @@ macro    (filedirdlgInit
     # compose the list of headers and sources
     set(FILEDIRDLG_HEADERS
         "filedirdlg.h"
-        "filedlg.h")
+        "filedlg.h"
+        "filedlgaddon.h"
+        "addons/filedlgcsvaddon.cc")
     set(FILEDIRDLG_SOURCES
         "filedirdlg.cc"
-        "filedlg.cc")
+        "filedlg.cc"
+        "filedlgaddon.cc"
+        "addons/filedlgcsvaddon.cc")
 
     pileSetSources(
         "${FILEDIRDLG_INIT_NAME}"
