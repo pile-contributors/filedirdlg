@@ -185,7 +185,8 @@ public:
     getCsvParms (
             QString &s_codec,
             QString &separator,
-            QString &quote);
+            QString &quote,
+            bool &b_header);
 
     /*  FUNCTIONS    ======================================================= */
     //

@@ -245,7 +245,7 @@ bool FileDlg::insertFileEncodingAndPreview()
             break;
         }
 
-        qDebug () << main_layout->objectName();
+        // qDebug () << main_layout->objectName();
         int row_index = main_layout->rowCount ();
         int column_index = main_layout->columnCount ();
 
@@ -302,7 +302,7 @@ bool FileDlg::prepareForCsv ()
 
 /* ------------------------------------------------------------------------- */
 bool FileDlg::getCsvParms (
-        QString & s_codec, QString & separator, QString & quote)
+        QString & s_codec, QString & separator, QString & quote, bool &b_header)
 {
     bool b_ret = false;
     for (;;) {
@@ -311,7 +311,7 @@ bool FileDlg::getCsvParms (
             break;
         }
 
-        b_ret = add_on->getCsvParms (s_codec, separator, quote);
+        b_ret = add_on->getCsvParms (s_codec, separator, quote, b_header);
         break;
     }
     return b_ret;

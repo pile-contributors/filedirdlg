@@ -30,6 +30,7 @@
 #include <QPushButton>
 #include <QGridLayout>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QPlainTextEdit>
 #include <QLabel>
 #include <QTextCodec>
@@ -78,6 +79,7 @@ FileDlgCsvAddon::FileDlgCsvAddon(FileDlg *parent) :
     separator_edit (NULL),
     quote_label (NULL),
     quote_edit (NULL),
+    header_check (NULL),
     preview_label (NULL),
     tbl (NULL)
 {}
@@ -90,6 +92,11 @@ void FileDlgCsvAddon::setupUI (QGridLayout *main_layout)
     int row_index = main_layout->rowCount ();
     int column_index = main_layout->columnCount ();
     QWidget * pwdg = main_layout->parentWidget ();
+    QToolButton * d = parent_dlg_->detailModeButton ();
+    int width_edit = 32;
+    if (d != NULL) {
+        width_edit = d->width ();
+    }
 
     QSettings stgs;
     QString s_prev_encoding = stgs.value(
@@ -98,6 +105,8 @@ void FileDlgCsvAddon::setupUI (QGridLayout *main_layout)
                 "FileDlgCsvAddon/separator_edit", ",").toString ();
     QString s_prev_quote = stgs.value(
                 "FileDlgCsvAddon/quote_edit", "\"").toString ();
+    QString b_prev_header = stgs.value(
+                "FileDlgCsvAddon/header_check", true).toBool ();
 
     vbox = new QHBoxLayout (pwdg);
     {
@@ -202,18 +211,32 @@ void FileDlgCsvAddon::setupUI (QGridLayout *main_layout)
                 break;
             }
         }
+        encoding_drop->setSizePolicy (
+                    QSizePolicy::Expanding, QSizePolicy::Preferred);
 
         vbox->addWidget (encoding_drop);
 
         separator_label = new QLabel (tr("Delimiter"), pwdg);
         vbox->addWidget (separator_label);
         separator_edit = new QLineEdit (tr(","), pwdg);
+        separator_edit->setSizePolicy (
+                    QSizePolicy::Fixed, QSizePolicy::Preferred);
+        separator_edit->setMaximumWidth (width_edit);
         vbox->addWidget (separator_edit);
 
         quote_label = new QLabel (tr("Quote"), pwdg);
         vbox->addWidget (quote_label);
         quote_edit = new QLineEdit (tr("\""), pwdg);
+        quote_edit->setSizePolicy (
+                    QSizePolicy::Fixed, QSizePolicy::Preferred);
+        quote_edit->setMaximumWidth (width_edit);
         vbox->addWidget (quote_edit);
+
+        header_label = new QLabel (tr("Header"), pwdg);
+        vbox->addWidget (header_label);
+        header_check = new QCheckBox (QString(""), pwdg);
+        vbox->addWidget (header_check);
+
     }
     main_layout->addLayout (vbox, row_index, 0, 1, 3);
 
@@ -233,12 +256,15 @@ void FileDlgCsvAddon::setupUI (QGridLayout *main_layout)
 
     quote_edit->setText (s_prev_quote);
     separator_edit->setText (s_prev_separ);
+    header_check->setText (b_prev_header);
 
     connect(encoding_drop, SIGNAL(currentIndexChanged(int)),
             this, SLOT(updateCSVPreview()));
     connect(quote_edit, SIGNAL(textChanged(QString)),
             this, SLOT(updateCSVPreview()));
     connect(separator_edit, SIGNAL(textChanged(QString)),
+            this, SLOT(updateCSVPreview()));
+    connect(header_check, SIGNAL(toggled(bool)),
             this, SLOT(updateCSVPreview()));
 
     QTreeView * maintv = parent_dlg_->mainTree ();
@@ -265,7 +291,7 @@ void FileDlgCsvAddon::clearPreview ()
 
 /* ------------------------------------------------------------------------- */
 bool FileDlgCsvAddon::getCsvParms (
-        QString &s_codec, QString &separator, QString &quote)
+        QString &s_codec, QString &separator, QString &quote, bool &b_header)
 {
     s_codec = encoding_drop->currentData().toString ();
 
@@ -278,6 +304,8 @@ bool FileDlgCsvAddon::getCsvParms (
     if (quote.isEmpty()) {
         quote = "\"";
     }
+
+    b_header = header_check->isChecked ();
 
     return true;
 }
@@ -307,7 +335,8 @@ QTableWidgetItem * FileDlgCsvAddon::showErrorItem (const QString & s_str)
 /* ========================================================================= */
 
 /* ------------------------------------------------------------------------- */
-void FileDlgCsvAddon::showItems (const QList<QStringList> & lsl)
+void FileDlgCsvAddon::showItems (
+        const QList<QStringList> & lsl, const QStringList & header)
 {
     tbl->setRowCount (lsl.count ());
     int crt_col_cnt = 0;
@@ -334,9 +363,10 @@ void FileDlgCsvAddon::showItems (const QList<QStringList> & lsl)
     }
 
     for (c = 0; c < crt_col_cnt; ++c) {
-        QTableWidgetItem * tvi = new QTableWidgetItem (QString::number (c+1));
+        QTableWidgetItem * tvi = new QTableWidgetItem (header.at (c));
         tbl->setHorizontalHeaderItem (c, tvi);
     }
+
 }
 /* ========================================================================= */
 
@@ -345,21 +375,33 @@ class ImportFromCsv : public QtCSV::Reader::AbstractProcessor {
 public:
 
     QList<QStringList> components_;
+    QStringList header_;
     int crt_line_;
+    bool b_header_;
+    int max_elements_;
 
     //! The constructor.
-    ImportFromCsv () :
+    ImportFromCsv (bool b_header) :
         QtCSV::Reader::AbstractProcessor(),
         components_ (),
-        crt_line_(0)
+        header_ (),
+        crt_line_ (0),
+        b_header_ (b_header),
+        max_elements_ (0)
     {}
 
     //! Process one line.
     bool operator() (const QStringList & elements) {
         ++crt_line_;
-        components_ << elements;
+        if (b_header_ && (crt_line_ == 1)) {
+            header_ = elements;
+        } else {
+            components_ << elements;
+        }
+        max_elements_ = qMax (max_elements_, elements.count ());
         return crt_line_ < 25;
     }
+
 };
 /* ========================================================================= */
 
@@ -372,7 +414,8 @@ void FileDlgCsvAddon::updateCSVPreview ()
         QString s_codec;
         QString s_sep;
         QString s_quote;
-        getCsvParms (s_codec, s_sep, s_quote);
+        bool b_header;
+        getCsvParms (s_codec, s_sep, s_quote, b_header);
 
         QString s__file = parent_dlg_->currentFile ();
         if (s__file.isEmpty()) {
@@ -386,31 +429,41 @@ void FileDlgCsvAddon::updateCSVPreview ()
                     "FileDlgCsvAddon/separator_edit", s_sep);
         stgs.setValue (
                     "FileDlgCsvAddon/quote_edit", s_quote);
+        stgs.setValue (
+                    "FileDlgCsvAddon/header_check", b_header);
         stgs.sync ();
 
         QList<QStringList> components;
+        QStringList header;
+        int max_elements;
 
 #     ifdef HAVE_QT_CSV_LIB
 
-        ImportFromCsv proc;
+        ImportFromCsv proc (b_header);
         QtCSV::Reader::readToProcessor(
                     s__file, proc,
                     s_sep, s_quote,
                     QTextCodec::codecForName (s_codec.toLatin1().constData()));
+        header = proc.header_;
         components = proc.components_;
-
+        max_elements = proc.max_elements_;
 #     else // HAVE_QT_CSV_LIB
 
         QStringList sl = readSomeTextlines (
                 s__file, 50, s_codec);
         foreach(const QString & s_iter, sl) {
             QStringList parts = s_iter.split (s_sep);
-            components.append(parts);;
+            components.append(parts);
+            max_elements = qMax (max_elements, parts.count());
         }
 
 #     endif // HAVE_QT_CSV_LIB
 
-        showItems (components);
+        for (int i = header.count(); i < max_elements; ++i) {
+            header << QString::number (i+1);
+        }
+
+        showItems (components, header);
         break;
     }
     tbl->resizeColumnsToContents ();

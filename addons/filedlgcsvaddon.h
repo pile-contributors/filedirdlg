@@ -38,6 +38,7 @@ class FileDlg;
 
 QT_BEGIN_NAMESPACE
 class QTableWidgetItem;
+class QCheckBox;
 QT_END_NAMESPACE
 
 /*  DEFINITIONS    ========================================================= */
@@ -67,6 +68,8 @@ public:
     QLineEdit * separator_edit;
     QLabel * quote_label;
     QLineEdit * quote_edit;
+    QLabel * header_label;
+    QCheckBox * header_check;
     QLabel * preview_label;
     QTableWidget * tbl;
 
@@ -103,7 +106,8 @@ public:
 
     void
     showItems (
-            const QList<QStringList> &lsl);
+            const QList<QStringList> &lsl,
+            const QStringList & header);
 
     void
     clearPreview();
@@ -112,7 +116,8 @@ public:
     getCsvParms (
             QString & s_codec,
             QString & separator,
-            QString & quote);
+            QString & quote,
+            bool &b_header);
 
 public slots:
 
